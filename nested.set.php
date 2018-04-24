@@ -22,7 +22,7 @@ class Nested_Set
         $this->_data = $data;
         $this->_parent_id = $parent;
 
-        switch ($option['position'] || !$option) {
+        switch ($option['position']) {
             case 'right' :
                 $this->insert_right();
                 break;
@@ -34,6 +34,9 @@ class Nested_Set
                 break;
             case 'after' :
                 $this->insert_after($option['node_id']);
+                break;
+            default:
+                $this->insert_right();
                 break;
         }
     }
@@ -74,16 +77,103 @@ class Nested_Set
 
     protected function insert_left()
     {
+        $parentInfo  = $this->get_node_info($this->_parent_id);
+
+        $parentLeft = $parentInfo['lft'];
+
+        $sqlUpdateLeft = 'UPDATE ' .$this->_table
+            . ' SET lft = (lft + 2) '
+            . ' WHERE lft >= ' . ($parentLeft + 1);
+        echo '<br>' . $sqlUpdateLeft;
+        mysqli_query($this->_connect, $sqlUpdateLeft);
+
+        $sqlUpdateRight = 'UPDATE ' .$this->_table
+            . ' SET rgt = (rgt + 2) '
+            . ' WHERE rgt > ' . ($parentLeft + 1);
+        echo '<br>' . $sqlUpdateRight;
+        mysqli_query($this->_connect, $sqlUpdateRight);
+
+        $data = $this->_data;
+        $data['parent'] 	= $parentInfo['id']; //$this->_parent_id
+        $data['lft'] 		= $parentLeft + 1;
+        $data['rgt'] 		= $parentLeft + 2;
+        $data['level'] 		= $parentInfo['level'] + 1;
+
+        $newQuey = $this->createInsertQuery($data);
+
+        $sqlInsert = 'INSERT INTO ' . $this->_table
+            . "(" . $newQuey['cols'] . ") "
+            . " VALUES(" . $newQuey['vals'] . ")";
+        echo '<br>' . $sqlInsert;
+        mysqli_query($this->_connect, $sqlInsert);
 
     }
 
-    protected function insert_before($node)
-    {
+    protected function insert_before($brother_id){
+        $parentInfo  = $this->get_node_info($this->_parent_id);
+        $brothderInfo = $this->get_node_info($brother_id);
 
+        $sqlUpdateLeft = 'UPDATE ' .$this->_table
+            . ' SET lft = (lft + 2) '
+            . ' WHERE lft >= ' . $brothderInfo['lft'];
+        //echo '<br>' . $sqlUpdateLeft;
+        mysqli_query($this->_connect, $sqlUpdateLeft);
+
+        $sqlUpdateRight = 'UPDATE ' .$this->_table
+            . ' SET rgt = (rgt + 2) '
+            . ' WHERE rgt >= ' . ($brothderInfo['lft'] + 1);
+        //echo '<br>' . $sqlUpdateRight;
+        mysqli_query($this->_connect, $sqlUpdateRight);
+
+        $data = $this->_data;
+        $data['parent'] 	= $parentInfo['id']; //$this->_parent_id
+        $data['lft'] 		= $brothderInfo['lft'];
+        $data['rgt'] 		= $brothderInfo['lft']+1;
+        $data['level'] 		= $parentInfo['level'] + 1;
+
+        $newQuey = $this->createInsertQuery($data);
+
+        $sqlInsert = 'INSERT INTO ' . $this->_table
+            . "(" . $newQuey['cols'] . ") "
+            . " VALUES(" . $newQuey['vals'] . ")";
+        //echo '<br>' . $sqlInsert;
+        mysqli_query($this->_connect, $sqlInsert);
     }
 
-    protected function insert_after($node)
-    {
+    protected function insert_after($brother_id){
+
+        $parentInfo  = $this->get_node_info($this->_parent_id);
+
+
+        $brothderInfo = $this->get_node_info($brother_id);
+
+
+        $sqlUpdateLeft = 'UPDATE ' .$this->_table
+            . ' SET lft = (lft + 2) '
+            . ' WHERE lft > ' . $brothderInfo['rgt'];
+        echo '<br>' . $sqlUpdateLeft;
+        mysqli_query($this->_connect, $sqlUpdateLeft);
+
+        $sqlUpdateRight = 'UPDATE ' .$this->_table
+            . ' SET rgt = (rgt + 2) '
+            . ' WHERE rgt > ' . $brothderInfo['rgt'];
+        echo '<br>' . $sqlUpdateRight;
+        mysqli_query($this->_connect, $sqlUpdateRight);
+
+        $data = $this->_data;
+        $data['parent'] 	= $parentInfo['id']; //$this->_parent_id
+        $data['lft'] 		= $brothderInfo['rgt'] + 1;
+        $data['rgt'] 		= $brothderInfo['rgt'] + 2;
+        $data['level'] 		= $parentInfo['level'] + 1;
+
+        $newQuey = $this->createInsertQuery($data);
+
+        $sqlInsert = 'INSERT INTO ' . $this->_table
+            . "(" . $newQuey['cols'] . ") "
+            . " VALUES(" . $newQuey['vals'] . ")";
+        echo '<br>' . $sqlInsert;
+        mysqli_query($this->_connect, $sqlInsert);
+
 
     }
 
